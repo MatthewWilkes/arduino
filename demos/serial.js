@@ -24,26 +24,32 @@ var serial = {};
       { 'vendorId': 0x2341, 'productId': 0x8056 }, // Arduino MKR Vidor 4000
       { 'vendorId': 0x2341, 'productId': 0x8057 }, // Arduino NANO 33 IoT
       { 'vendorId': 0x239A }, // Adafruit Boards!
+      { 'vendorId': 0x10c4, 'productId': 0xea60 },
     ];
     return navigator.usb.requestDevice({ 'filters': filters }).then(
       device => new serial.Port(device)
     );
   }
 
+
   serial.Port = function(device) {
     this.device_ = device;
-    this.interfaceNumber_ = 2;  // original interface number of WebUSB Arduino demo
-    this.endpointIn_ = 5;       // original in endpoint ID of WebUSB Arduino demo
-    this.endpointOut_ = 4;      // original out endpoint ID of WebUSB Arduino demo
+    console.log(device);
+    this.interfaceNumber_ = 0;  // original interface number of WebUSB Arduino demo
+    this.endpointIn_ = 1;       // original in endpoint ID of WebUSB Arduino demo
+    this.endpointOut_ = 0x82;      // original out endpoint ID of WebUSB Arduino demo
   };
 
   serial.Port.prototype.connect = function() {
     let readLoop = () => {
+      console.log("Trying to read from "+this.endpointIn_);
       this.device_.transferIn(this.endpointIn_, 64).then(result => {
+        console.log(result);
         this.onReceive(result.data);
         readLoop();
       }, error => {
-        this.onReceiveError(error);
+        console.log(error);
+        //this.onReceiveError(error);
       });
     };
 
@@ -76,10 +82,16 @@ var serial = {};
         .then(() => this.device_.controlTransferOut({
             'requestType': 'class',
             'recipient': 'interface',
-            'request': 0x22,
+            'request': 0x00,
             'value': 0x01,
-            'index': this.interfaceNumber_}))
-        .then(() => {
+            'index': 0}))
+          .then(() => this.device_.controlTransferOut({
+            'requestType': 'class',
+            'recipient': 'interface',
+            'request': 0x1E,
+            'value': 9600,
+            'index': 0}))
+          .then(() => {
           readLoop();
         });
   };
@@ -88,13 +100,15 @@ var serial = {};
     return this.device_.controlTransferOut({
             'requestType': 'class',
             'recipient': 'interface',
-            'request': 0x22,
+            'request': 0x00,
             'value': 0x00,
             'index': this.interfaceNumber_})
         .then(() => this.device_.close());
   };
 
   serial.Port.prototype.send = function(data) {
-    return this.device_.transferOut(this.endpointOut_, data);
+    var x = this.device_.transferOut(this.endpointOut_, data);
+    x.then((e) => console.log(e));
+    return x;
   };
 })();
