@@ -113,7 +113,7 @@
       do { curDate = new Date(); }
       while(curDate-date < 2000);
   
-      var cmd = "import os;import json;install_file=open('/apps/remote_control/__init__.py', 'wb');\r\n";
+      var cmd = "import os;import json;os.mkdir('remote_control');install_file=open('/apps/remote_control/__init__.py', 'wb');\r\n";
       console.log(cmd);
       t.io.sendString(cmd);
 
