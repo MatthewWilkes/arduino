@@ -89,7 +89,7 @@ var serial = {};
             'requestType': 'class',
             'recipient': 'interface',
             'request': 0x1E,
-            'value': 9600,
+            'value': 115200,
             'index': 0}))
           .then(() => {
           readLoop();
@@ -108,7 +108,7 @@ var serial = {};
 
   serial.Port.prototype.send = function(data) {
     var x = this.device_.transferOut(this.endpointOut_, data);
-    x.then((e) => console.log(e));
+    x.then((e) => console.log(data, e));
     return x;
   };
 })();

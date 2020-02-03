@@ -37,8 +37,12 @@
   document.addEventListener('DOMContentLoaded', event => {
     let connectButton = document.querySelector('#connect');
     let runButton = document.querySelector('#run');
+    let intButton = document.querySelector('#interrupt');
+    let startButton = document.querySelector('#remote');
+    let installButton = document.querySelector('#install');
     let saveButton = document.querySelector('#save');
     let loadButton = document.querySelector('#load');
+    let lsButton = document.querySelector('#ls');
 
     t.decorate(document.querySelector('#terminal'));
     t.setWidth(80);
@@ -84,6 +88,59 @@
       t.io.sendString(JSON.stringify(cmd)+"\r\n");
     });
 
+    intButton.addEventListener('click', function() {
+      t.io.println('^C');
+      t.io.sendString("\x03");
+    });
+
+    startButton.addEventListener('click', function() {
+      t.io.sendString("\x03");
+      
+      var date = new Date();
+      var curDate = null;
+      do { curDate = new Date(); }
+      while(curDate-date < 2000);
+  
+      t.io.sendString("import system; system.start('remote_control')\r\n");
+    });
+
+    installButton.addEventListener('click', function() {
+      t.io.println('Installing');
+      t.io.sendString("\x03");
+      
+      var date = new Date();
+      var curDate = null;
+      do { curDate = new Date(); }
+      while(curDate-date < 2000);
+  
+      var cmd = "import os;import json;install_file=open('/apps/remote_control/__init__.py', 'wb');\r\n";
+      console.log(cmd);
+      t.io.sendString(cmd);
+
+      var date = new Date();
+      var curDate = null;
+      do { curDate = new Date(); }
+      while(curDate-date < 2000);
+//
+      cmd = "data = json.loads(r'" + JSON.stringify(document.getElementById("remote_control").text) + "');\r\n";
+      console.log(cmd);
+      t.io.sendString(cmd);
+
+      var date = new Date();
+      var curDate = null;
+      do { curDate = new Date(); }
+      while(curDate-date < 2000);
+      
+      
+      cmd = "install_file.write(data);install_file.close();\r\n\r\n";
+      console.log(cmd);
+      t.io.sendString(cmd);
+
+
+      
+      t.io.println('Installed');
+
+    });
     
     saveButton.addEventListener('click', function() {
       t.io.println('Saving file');
@@ -117,6 +174,37 @@
       t.io.sendString(JSON.stringify(cmd)+"\r\n");
     });
 
+    lsButton.addEventListener('click', function() {
+      t.io.println('Loading file');
+      var cmd = {"cmd": "lsdir", path: "/"};
+      window.data = "";
+      t.io.callback = str => {
+        window.data += str;
+        console.log("received: " + str);
+        console.log("to process: " + window.data);
+        try{
+          var strLines = window.data.split("\n");
+          for (var i in strLines) {
+            //alert(strLines[i]);
+            var obj = JSON.parse(strLines[i]);
+            if (obj.ok) {
+              obj.result.forEach(function(element) {
+                var opt = document.createElement("option");
+                var node = document.createTextNode(element);
+                opt.appendChild(node);
+                document.getElementById("files").appendChild(opt);
+              });
+              
+            }
+          }
+          
+        } catch(e) {
+          console.log(e);
+        }
+      };
+      t.io.sendString(JSON.stringify(cmd)+"\r\n");
+    });
+    
     
     serial.getPorts().then(ports => {
       if (ports.length == 0) {
